@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "removeComments": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "newLine": "LF",
+    "declaration": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "allowJs": false,
+    "pretty": true,
+    "outDir": "build",
+    "inlineSourceMap": true,
+    "importHelpers": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true
+  },
+  "exclude": [
+    "node_modules",
+    "build"
+  ]
+  // "include": [
+  //   "lib/**/*.ts"
+  // ]
+}

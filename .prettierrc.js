@@ -1,0 +1,12 @@
+module.exports = {
+  trailingComma: 'none',
+  tabWidth: 2,
+  semi: true,
+  singleQuote: true,
+  useTabs: false,
+  arrowParens: 'avoid',
+  endOfLine: 'auto',
+  insertPragma: false,
+  printWidth: 140,
+  proseWrap: 'always'
+};
