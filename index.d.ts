@@ -1,8 +1,3 @@
-// declare class AlimqRequestError extends Error {
-//   Code: string;
-//   RequestId: string;
-// }
-
 declare module '@aliyunmq/mq-http-sdk' {
   export class MQClient {
     endpoint: string;

@@ -1,5 +1,5 @@
 import { MessageBody, ResponseConfirm } from '@aliyunmq/mq-http-sdk';
-import TopicClient from './topicClient';
+import TopicClient from './index';
 
 export default class Message {
   constructor(public readonly client: TopicClient, public readonly message: MessageBody) {}

@@ -1,4 +1,4 @@
-import TopicClient from '../lib/topicClient';
+import TopicClient from '../lib';
 import { normalTopic } from './options';
 
 const topic = new TopicClient(normalTopic);

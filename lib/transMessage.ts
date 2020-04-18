@@ -1,5 +1,5 @@
 import { ResponseConfirm, ResponsePublish } from '@aliyunmq/mq-http-sdk';
-import TopicClient from './topicClient';
+import TopicClient from './index';
 
 export default class TransMessage {
   constructor(public readonly client: TopicClient, public readonly message: ResponsePublish['body']) {}

@@ -15,6 +15,8 @@ import RequestError from './requestError';
 import ConsumeResponseError from './consumeResponseError';
 import TransMessage from './transMessage';
 
+export { TransMessage, ConsumeResponseError, RequestError, Message };
+
 export const EVENT = {
   MESSAGE: Symbol('@AliRocketMQ/EVENT/MESSAGE'),
   HALF_MESSAGE: Symbol('@AliRocketMQ/EVENT/HALF_MESSAGE'),
