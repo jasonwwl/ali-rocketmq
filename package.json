@@ -4,7 +4,7 @@
   "description": "",
   "main": "build/lib/index.js",
   "types": "build/lib/index.d.js",
-  "files":[
+  "files": [
     "build/**/*.js",
     "build/**/*.d.ts",
     "index.d.ts"
@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/jasonwwl/ali-rocketmq#readme",
   "devDependencies": {
+    "@types/node": "^13.13.5",
     "@typescript-eslint/eslint-plugin": "^2.28.0",
     "@typescript-eslint/parser": "^2.28.0",
     "eslint": "^6.8.0",

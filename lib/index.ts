@@ -21,7 +21,8 @@ export const EVENT = {
   MESSAGE: Symbol('@AliRocketMQ/EVENT/MESSAGE'),
   HALF_MESSAGE: Symbol('@AliRocketMQ/EVENT/HALF_MESSAGE'),
   MESSAGE_ERROR: Symbol('@AliRocketMQ/EVENT/MESSAGE_ERROR'),
-  HALF_MESSAGE_ERROR: Symbol('@AliRocketMQ/EVENT/HALF_MESSAGE_ERROR')
+  HALF_MESSAGE_ERROR: Symbol('@AliRocketMQ/EVENT/HALF_MESSAGE_ERROR'),
+  CONSUME_ERROR: Symbol('@AliRocketMQ/EVENT/CONSUME_ERROR')
 };
 
 export interface Options {
@@ -43,11 +44,16 @@ export interface PublishMessageResponse {
   RequestId: string;
 }
 
+export type messageSyncHandler = (message: Message) => Promise<void>;
+
 export default class TopicClient extends EventEmitter {
-  client: MQClient;
-  producer: MQProducer;
-  transProducer: MQTransProducer;
-  consumer: MQConsumer;
+  public client: MQClient;
+  public producer: MQProducer;
+  public transProducer: MQTransProducer;
+  public consumer: MQConsumer;
+  private msgSyncHandler: messageSyncHandler;
+  private msgTransSyncHandler: messageSyncHandler;
+
   constructor(public options: Options) {
     super();
     const { endpoint, accessKey, accessSecret, topic, group, instance } = options;
@@ -86,12 +92,79 @@ export default class TopicClient extends EventEmitter {
     return this.consumer.ackMessage([message.ReceiptHandle]);
   }
 
+  async next(options: SubscribeOptions): Promise<void> {
+    try {
+      const result = await this.consumer.consumeMessage(options.numOfMessages, options.waitSeconds);
+      if (result.code !== 200) {
+        const err = new ConsumeResponseError(
+          `consumer response status error, code: ${result.code}`,
+          result.code,
+          result.requestId,
+          result.body
+        );
+        // this.emit(EVENT.MESSAGE_ERROR, err);
+        throw err;
+      }
+      const workerRes = await Promise.allSettled(result.body.map(msg => this.msgSyncHandler(new Message(this, msg))));
+      for (const item of workerRes) {
+        if (item.status === 'rejected') {
+          this.emit(EVENT.CONSUME_ERROR, item.reason);
+        }
+      }
+    } catch (e) {
+      this.emit(EVENT.MESSAGE_ERROR, e as RequestError);
+    } finally {
+      await this.next(options);
+    }
+  }
+
+  async nextTrans(options: SubscribeOptions): Promise<void> {
+    try {
+      const result = await this.transProducer.consumeHalfMessage(options.numOfMessages, options.waitSeconds || 10);
+      if (result.code !== 200) {
+        const err = new ConsumeResponseError(
+          `consumer response status error, code: ${result.code}`,
+          result.code,
+          result.requestId,
+          result.body
+        );
+        throw err;
+      }
+      const workerRes = await Promise.allSettled(result.body.map(msg => this.msgSyncHandler(new Message(this, msg))));
+      for (const item of workerRes) {
+        if (item.status === 'rejected') {
+          this.emit(EVENT.CONSUME_ERROR, item.reason);
+        }
+      }
+    } catch (e) {
+      this.emit(EVENT.HALF_MESSAGE_ERROR, e as RequestError);
+    } finally {
+      await this.next(options);
+    }
+  }
+
+  onMessageSync(options: SubscribeOptions, fn: messageSyncHandler): void {
+    if (this.msgSyncHandler) {
+      return null;
+    }
+    this.msgSyncHandler = fn;
+    this.next(options);
+  }
+
+  onHalfMessageSync(options: SubscribeOptions, fn: messageSyncHandler): void {
+    if (this.msgTransSyncHandler) {
+      return null;
+    }
+    this.msgTransSyncHandler = fn;
+    this.nextTrans(options);
+  }
+
   subscribe(options: SubscribeOptions): void {
     process.nextTick(async () => {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
-          const result = await this.consumer.consumeMessage(options.numOfMessages, options.waitSeconds);
+          const result = await this.consumer.consumeMessage(options.numOfMessages, options.waitSeconds || 10);
           if (result.code !== 200) {
             const err = new ConsumeResponseError(
               `consumer response status error, code: ${result.code}`,
@@ -117,7 +190,7 @@ export default class TopicClient extends EventEmitter {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
-          const result = await this.transProducer.consumeHalfMessage(options.numOfMessages, options.waitSeconds);
+          const result = await this.transProducer.consumeHalfMessage(options.numOfMessages, options.waitSeconds || 10);
           if (result.code !== 200) {
             const err = new ConsumeResponseError(
               `consumer response status error, code: ${result.code}`,
@@ -152,5 +225,9 @@ export default class TopicClient extends EventEmitter {
 
   onHalfMessageError(fn: () => void): this {
     return this.on(EVENT.HALF_MESSAGE_ERROR, fn);
+  }
+
+  onConsumeError(fn: () => void): this {
+    return this.on(EVENT.CONSUME_ERROR, fn);
   }
 }

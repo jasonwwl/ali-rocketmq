@@ -5,8 +5,11 @@ const topic = new TopicClient(normalTopic);
 
 async function exec(): Promise<void> {
   try {
-    const resp = await topic.send('im your dad 2!!!', 'test-tag', { abc: 123 });
-    console.log(resp);
+    const jobs = [];
+    for (let i = 0; i < 100; i++) {
+      jobs.push(topic.send('im your dad !!!' + i, 'test-tag' + i, { index: i }));
+    }
+    await Promise.all(jobs);
   } catch (e) {
     console.error('send error:', e);
   }

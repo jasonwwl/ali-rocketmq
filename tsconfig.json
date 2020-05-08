@@ -14,7 +14,10 @@
     "inlineSourceMap": true,
     "importHelpers": true,
     "strictBindCallApply": true,
-    "strictFunctionTypes": true
+    "strictFunctionTypes": true,
+    "lib": [
+      "ES2020.Promise"
+    ]
   },
   "exclude": [
     "node_modules",
