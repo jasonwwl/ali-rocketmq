@@ -1,6 +1,6 @@
 {
   "name": "ali-rocketmq",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "build/lib/index.js",
   "types": "build/lib/index.d.js",
