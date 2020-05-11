@@ -1,7 +1,7 @@
-import TopicClient from '../lib';
 import { normalTopic } from './options';
+import { Client } from '../lib';
 
-const topic = new TopicClient(normalTopic);
+const topic = new Client(normalTopic);
 
 // topic.onMessage(async message => {
 //   console.log('[consumer-pid-%s] receive: ', process.pid, message.message);

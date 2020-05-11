@@ -11,9 +11,9 @@ import {
 } from '@aliyunmq/mq-http-sdk';
 import { EventEmitter } from 'events';
 import Message from './message';
-import RequestError from './requestError';
+import { RequestError } from './requestError';
 import ConsumeResponseError from './consumeResponseError';
-import TransMessage from './transMessage';
+import { TransMessage } from './transMessage';
 
 export { TransMessage, ConsumeResponseError, RequestError, Message };
 
@@ -46,7 +46,7 @@ export interface PublishMessageResponse {
 
 export type messageSyncHandler = (message: Message) => Promise<void>;
 
-export default class TopicClient extends EventEmitter {
+export class Client extends EventEmitter {
   public client: MQClient;
   public producer: MQProducer;
   public transProducer: MQTransProducer;

@@ -1,7 +1,7 @@
-import TopicClient from '../lib';
+import { Client } from '../lib';
 import { normalTopic } from './options';
 
-const topic = new TopicClient(normalTopic);
+const topic = new Client(normalTopic);
 
 async function exec(): Promise<void> {
   try {

@@ -1,8 +1,8 @@
 import { MessageBody, ResponseConfirm } from '@aliyunmq/mq-http-sdk';
-import TopicClient from './index';
+import { Client } from './index';
 
 export default class Message {
-  constructor(public readonly client: TopicClient, public readonly message: MessageBody) {}
+  constructor(public readonly client: Client, public readonly message: MessageBody) {}
   done(): Promise<ResponseConfirm> {
     return this.client.consumer.ackMessage([this.message.ReceiptHandle]);
   }
