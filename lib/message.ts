@@ -2,10 +2,16 @@ import { MessageBody, ResponseConfirm } from '@aliyunmq/mq-http-sdk';
 import { Client } from './index';
 
 export class Message {
-  public content: unknown;
+  public content: object | string | Array<unknown> | number | null;
+  public tag: string | null;
+  public props: MessageBody['Properties'];
+  public key: string | null;
 
   constructor(public readonly client: Client, public readonly message: MessageBody) {
     this.content = JSON.parse(message.MessageBody);
+    this.key = message.MessageKey;
+    this.tag = message.MessageTag;
+    this.props = message.Properties;
   }
 
   done(): Promise<ResponseConfirm> {

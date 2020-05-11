@@ -159,7 +159,7 @@ declare module '@aliyunmq/mq-http-sdk' {
     /**
      * 消息的 Key
      */
-    readonly MessageKey?: number;
+    readonly MessageKey?: string;
     /**
      * 消息自定义属性
      */
