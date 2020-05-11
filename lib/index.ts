@@ -10,12 +10,10 @@ import {
   MessageProperties
 } from '@aliyunmq/mq-http-sdk';
 import { EventEmitter } from 'events';
-import Message from './message';
+import { Message } from './message';
 import { RequestError } from './requestError';
-import ConsumeResponseError from './consumeResponseError';
+import { ConsumeResponseError } from './consumeResponseError';
 import { TransMessage } from './transMessage';
-
-export { TransMessage, ConsumeResponseError, RequestError, Message };
 
 export const EVENT = {
   MESSAGE: Symbol('@AliRocketMQ/EVENT/MESSAGE'),
@@ -79,12 +77,12 @@ export class Client extends EventEmitter {
     return msgProps;
   }
 
-  send(msg: string, tag?: string, props?: MsgProps): Promise<ResponsePublish> {
-    return this.producer.publishMessage(msg, tag, props ? this.parseMsgProps(props) : null);
+  send(msg: unknown, tag?: string, props?: MsgProps): Promise<ResponsePublish> {
+    return this.producer.publishMessage(JSON.stringify(msg), tag, props ? this.parseMsgProps(props) : null);
   }
 
-  async sendTrans(msg: string, tag?: string, props?: MsgProps): Promise<TransMessage> {
-    const response = await this.transProducer.publishMessage(msg, tag, props ? this.parseMsgProps(props) : null);
+  async sendTrans(msg: unknown, tag?: string, props?: MsgProps): Promise<TransMessage> {
+    const response = await this.transProducer.publishMessage(JSON.stringify(msg), tag, props ? this.parseMsgProps(props) : null);
     return new TransMessage(this, response.body);
   }
 
@@ -112,6 +110,9 @@ export class Client extends EventEmitter {
         }
       }
     } catch (e) {
+      if (e.message.search('MessageNotExist') >= 0) {
+        return null;
+      }
       this.emit(EVENT.MESSAGE_ERROR, e as RequestError);
     } finally {
       await this.next(options);
@@ -130,16 +131,19 @@ export class Client extends EventEmitter {
         );
         throw err;
       }
-      const workerRes = await Promise.allSettled(result.body.map(msg => this.msgSyncHandler(new Message(this, msg))));
+      const workerRes = await Promise.allSettled(result.body.map(msg => this.msgTransSyncHandler(new Message(this, msg))));
       for (const item of workerRes) {
         if (item.status === 'rejected') {
           this.emit(EVENT.CONSUME_ERROR, item.reason);
         }
       }
     } catch (e) {
+      if (e.message.search('MessageNotExist') >= 0) {
+        return null;
+      }
       this.emit(EVENT.HALF_MESSAGE_ERROR, e as RequestError);
     } finally {
-      await this.next(options);
+      await this.nextTrans(options);
     }
   }
 
@@ -179,6 +183,9 @@ export class Client extends EventEmitter {
             this.emit(EVENT.MESSAGE, new Message(this, message));
           }
         } catch (e) {
+          if (e.message.search('MessageNotExist') >= 0) {
+            continue;
+          }
           this.emit(EVENT.MESSAGE_ERROR, e as RequestError);
         }
       }
@@ -205,6 +212,9 @@ export class Client extends EventEmitter {
             this.emit(EVENT.HALF_MESSAGE, new Message(this, message));
           }
         } catch (e) {
+          if (e.message.search('MessageNotExist') >= 0) {
+            continue;
+          }
           this.emit(EVENT.HALF_MESSAGE_ERROR, e as RequestError);
         }
       }
@@ -219,15 +229,15 @@ export class Client extends EventEmitter {
     return this.on(EVENT.HALF_MESSAGE, fn);
   }
 
-  onMessageError(fn: () => void): this {
+  onMessageError(fn: (err: Error) => void): this {
     return this.on(EVENT.MESSAGE_ERROR, fn);
   }
 
-  onHalfMessageError(fn: () => void): this {
+  onHalfMessageError(fn: (err: Error) => void): this {
     return this.on(EVENT.HALF_MESSAGE_ERROR, fn);
   }
 
-  onConsumeError(fn: () => void): this {
+  onConsumeError(fn: (err: Error) => void): this {
     return this.on(EVENT.CONSUME_ERROR, fn);
   }
 }

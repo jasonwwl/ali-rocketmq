@@ -1,4 +1,4 @@
-export default class ConsumeResponseError extends Error {
+export class ConsumeResponseError extends Error {
   constructor(
     message: string,
     public readonly Code: number,
