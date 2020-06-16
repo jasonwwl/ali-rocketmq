@@ -77,8 +77,16 @@ export class Client extends EventEmitter {
     return msgProps;
   }
 
-  send(msg: unknown, tag?: string, props?: MsgProps): Promise<ResponsePublish> {
-    return this.producer.publishMessage(JSON.stringify(msg), tag, props ? this.parseMsgProps(props) : null);
+  async send(msg: unknown, tag?: string, props?: MsgProps,retry=true): Promise<ResponsePublish> {
+    try {
+      const res = await this.producer.publishMessage(JSON.stringify(msg), tag, props ? this.parseMsgProps(props) : null);
+      return res;
+    } catch (error) {
+      if(retry){
+        return this.send(msg,tag,props,false)
+      }
+      throw error;
+    }
   }
 
   async sendTrans(msg: unknown, tag?: string, props?: MsgProps): Promise<TransMessage> {
