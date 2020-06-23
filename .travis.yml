@@ -18,6 +18,7 @@ script:
   # - npm run test
 # before_deploy:
 #   - npm run build:travis
+
 deploy:
   provider: npm
   email: "$NPM_EMAIL"
