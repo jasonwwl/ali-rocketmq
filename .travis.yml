@@ -6,22 +6,22 @@ node_js:
   - 12
   - 11
   - 10
+os:
+  - linux
+dist: "xenial"
 
 install:
   - npm install
-
 script:
   - npm run lint
   - npm run build:travis
   # - npm run test
-
 # before_deploy:
 #   - npm run build:travis
-
 deploy:
   provider: npm
   email: "$NPM_EMAIL"
   api_token: "$NPM_TOKEN"
-  skip_cleanup: true
+  cleanup: false
   on:
     tags: true
