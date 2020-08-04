@@ -99,59 +99,65 @@ export class Client extends EventEmitter {
   }
 
   async next(options: SubscribeOptions): Promise<void> {
-    try {
-      const result = await this.consumer.consumeMessage(options.numOfMessages, options.waitSeconds);
-      if (result.code !== 200) {
-        const err = new ConsumeResponseError(
-          `consumer response status error, code: ${result.code}`,
-          result.code,
-          result.requestId,
-          result.body
-        );
-        // this.emit(EVENT.MESSAGE_ERROR, err);
-        throw err;
-      }
-      const workerRes = await Promise.allSettled(result.body.map(msg => this.msgSyncHandler(new Message(this, msg))));
-      for (const item of workerRes) {
-        if (item.status === 'rejected') {
-          this.emit(EVENT.CONSUME_ERROR, item.reason);
+    while (1) {
+      try {
+        const result = await this.consumer.consumeMessage(options.numOfMessages, options.waitSeconds);
+        if (result.code !== 200) {
+          const err = new ConsumeResponseError(
+            `consumer response status error, code: ${result.code}`,
+            result.code,
+            result.requestId,
+            result.body
+          );
+          // this.emit(EVENT.MESSAGE_ERROR, err);
+          throw err;
         }
+        const workerRes = await Promise.allSettled(result.body.map(msg => this.msgSyncHandler(new Message(this, msg))));
+        for (const item of workerRes) {
+          if (item.status === 'rejected') {
+            this.emit(EVENT.CONSUME_ERROR, item.reason);
+          }
+        }
+      } catch (e) {
+        if (e.message.search('MessageNotExist') >= 0) {
+          // return null;
+          continue;
+        }
+        this.emit(EVENT.MESSAGE_ERROR, e as RequestError);
+      } finally {
+        // await this.next(options);
       }
-    } catch (e) {
-      if (e.message.search('MessageNotExist') >= 0) {
-        return null;
-      }
-      this.emit(EVENT.MESSAGE_ERROR, e as RequestError);
-    } finally {
-      await this.next(options);
     }
   }
 
   async nextTrans(options: SubscribeOptions): Promise<void> {
-    try {
-      const result = await this.transProducer.consumeHalfMessage(options.numOfMessages, options.waitSeconds || 10);
-      if (result.code !== 200) {
-        const err = new ConsumeResponseError(
-          `consumer response status error, code: ${result.code}`,
-          result.code,
-          result.requestId,
-          result.body
-        );
-        throw err;
-      }
-      const workerRes = await Promise.allSettled(result.body.map(msg => this.msgTransSyncHandler(new Message(this, msg))));
-      for (const item of workerRes) {
-        if (item.status === 'rejected') {
-          this.emit(EVENT.CONSUME_ERROR, item.reason);
+    while (1) {
+      try {
+        const result = await this.transProducer.consumeHalfMessage(options.numOfMessages, options.waitSeconds || 10);
+        if (result.code !== 200) {
+          const err = new ConsumeResponseError(
+            `consumer response status error, code: ${result.code}`,
+            result.code,
+            result.requestId,
+            result.body
+          );
+          throw err;
         }
+        const workerRes = await Promise.allSettled(result.body.map(msg => this.msgTransSyncHandler(new Message(this, msg))));
+        for (const item of workerRes) {
+          if (item.status === 'rejected') {
+            this.emit(EVENT.CONSUME_ERROR, item.reason);
+          }
+        }
+      } catch (e) {
+        if (e.message.search('MessageNotExist') >= 0) {
+          // return null;
+          continue;
+        }
+        this.emit(EVENT.HALF_MESSAGE_ERROR, e as RequestError);
+      } finally {
+        // await this.nextTrans(options);
       }
-    } catch (e) {
-      if (e.message.search('MessageNotExist') >= 0) {
-        return null;
-      }
-      this.emit(EVENT.HALF_MESSAGE_ERROR, e as RequestError);
-    } finally {
-      await this.nextTrans(options);
     }
   }
 
